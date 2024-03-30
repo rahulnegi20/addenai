@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from dependency import get_db
 from core import schemas
 import crud as DB
-
+from fastapi.encoders import jsonable_encoder
 from typing_extensions import Annotated
 from sqlalchemy.orm import Session
 
@@ -15,7 +15,8 @@ db_dependency = Annotated[Session, Depends(get_db)]
 async def getAdsets(db: db_dependency, skip: int = 0, limit: int = 10):
     try:
         res = DB.getAdsetsDB(db, skip=skip, limit=limit)
-        return JSONResponse(content={"adsets": res}, status_code=200)
+        # return {"ads": res}
+        return JSONResponse(content=jsonable_encoder({"adsets": res}), status_code=200)
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed with error: {e}")   
@@ -24,8 +25,12 @@ async def getAdsets(db: db_dependency, skip: int = 0, limit: int = 10):
 async def getAdsetsbyCampaignId(db: db_dependency, campaignId: str, skip: int = 0, limit: int = 10):
     try:
         res = DB.getAdsetsByCampaginIdDB(db, int(campaignId), skip=skip, limit=limit)
-        return JSONResponse(content={"adsets": res}, status_code=200)
-
+        if not res:
+            raise HTTPException(status_code=404, detail="Adset not found for given campaignId")
+        return JSONResponse(content=jsonable_encoder({"adsets": res}), status_code=200)
+    
+    except HTTPException as http_error:
+        raise http_error
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed with error: {e}")   
 
@@ -33,8 +38,11 @@ async def getAdsetsbyCampaignId(db: db_dependency, campaignId: str, skip: int = 
 async def getAdsetsbyGroupId(db: db_dependency, groupId: str, skip: int = 0, limit: int = 10):
     try:
         res = DB.getAdsetsByGroupIdDB(db, int(groupId), skip=skip, limit=limit)
-        return JSONResponse(content={"adsets": res}, status_code=200)
-    
+        if not res:
+            raise HTTPException(status_code=404, detail="Adset not found for given groupId")
+        return JSONResponse(content=jsonable_encoder({"adsets": res}), status_code=200)
+    except HTTPException as http_error:
+        raise http_error
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed with error: {e}")  
      
@@ -42,7 +50,7 @@ async def getAdsetsbyGroupId(db: db_dependency, groupId: str, skip: int = 0, lim
 async def getCampaigns(db: db_dependency, skip: int = 0, limit: int = 10):
     try:
         res = DB.getCampaignsDB(db, skip=skip, limit=limit)
-        return JSONResponse(content={"campaigns": res}, status_code=200)
+        return JSONResponse(content=jsonable_encoder({"campaigns": res}), status_code=200)
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed with error: {e}")   
@@ -52,14 +60,14 @@ async def getCampaigns(db: db_dependency, skip: int = 0, limit: int = 10):
 async def getGroups(db: db_dependency, skip: int = 0, limit: int = 10):
     try:
         res = DB.getGroupsDB(db, skip=skip, limit=limit)
-        return JSONResponse(content={"groups": res}, status_code=200)
+        return JSONResponse(content=jsonable_encoder({"groups": res}), status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed with error: {e}")   
 
 @router.post("/createAdset", status_code=status.HTTP_201_CREATED)
 async def createAdset(db:db_dependency, adset: schemas.Adset):
     try:
-        print(adset)
+        # print(adset)
         ans = DB.createAdsetDB(db=db, adset=adset)
 
         return JSONResponse(content={"response":"Created Sucessfully"}, status_code=201)
